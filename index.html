@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Stock Price and Potential Loss</title>
+    <style>
+        @import 'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@48,400,1,0';
+        @import url('https://fonts.googleapis.com/css2?family=Roboto+Slab&family=Roboto:wght@400;900&display=swap');
+        body {
+            font-family: 'Roboto Slab';
+        }
+        h1, h2, h3, h4 {
+            font-family: 'Roboto';
+        }
+        header {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        header a {
+            font-size: 20px;
+            font-family: 'Roboto';
+        }
+        #price-difference {
+            font-size: 20px;
+            margin-top: 10px;
+        }
+        #potential-loss {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 10px;
+            color: red; /* Emphasize potential loss */
+        }
+        .positive {
+            color: green;
+        }
+        .negative {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>TSLA Real Time Price Difference</h1>
+        <a href="tinybell.html">Track with sound alert</a>
+        <a href="index.html">Track without sound alert</a>
+    </header>
+    <p>Note: I am using a free stock price api, which has a limit to the number of times this page can load. If the data doesn't load for you, check back in a few minutes.</p>
+    <p><a href="https://www.ibtimes.co.uk/elon-musk-loses-billion-dollars-every-time-tesla-stock-drops-243-1732298" target="_blank">This</a> article says Elon looses $1 billion every time TSLA drops by $2.43.</p>
+    <p>When you loaded this page, TSLA was at <span id="initial-price">Loading...</span>.</p>
+    <div id="current-price">Current Price: Loading...</div>
+    <div id="price-difference">Difference: Loading...</div>
+    <p>Which means Elon has potentially lost <span id="potential-loss">Loading...</span> since you opened this page.</p>
+    <h2>Other projects you might like:</h2>
+    <ul>
+        <li><a href="https://ryanmontville.com/countdown/">How many days left until January 20, 2029?</a></li>
+    </ul>
+    <script>
+        const socket = new WebSocket('wss://ws.finnhub.io?token=cvn7uohr01qqv4h01lmgcvn7uohr01qqv4h01ln0');
+        const initialPriceDiv = document.getElementById('initial-price');
+        const currentPriceDiv = document.getElementById('current-price');
+        const priceDifferenceDiv = document.getElementById('price-difference');
+        const potentialLossDiv = document.getElementById('potential-loss');
+
+        const lossMultiplier = 411522633.74;
+        let initialPrice = null;
+        let latestPrice = null;
+
+        // Function to calculate and display potential loss
+        function updatePotentialLoss() {
+            if (initialPrice !== null && latestPrice !== null) {
+                const decreaseInPrice = initialPrice - latestPrice;
+                const totalLoss = lossMultiplier * decreaseInPrice;
+
+                if (totalLoss > 0) {
+                    potentialLossDiv.textContent = `$${totalLoss.toFixed(2)}`;
+                } else {
+                    potentialLossDiv.textContent = `$0.00`; // No loss or gain
+                }
+            } else {
+                potentialLossDiv.textContent = `(L): Loading...`;
+            }
+        }
+
+        // Function to update the displayed difference
+        function updateDifference() {
+            if (initialPrice !== null && latestPrice !== null) {
+                const difference = latestPrice - initialPrice;
+                priceDifferenceDiv.textContent = `Difference: $${difference.toFixed(2)}`;
+                if (difference > 0) {
+                    priceDifferenceDiv.className = 'positive';
+                } else if (difference < 0) {
+                    priceDifferenceDiv.className = 'negative';
+                } else {
+                    priceDifferenceDiv.className = ''; // Remove any color class
+                }
+            }
+        }
+
+        // Connection opened -> Subscribe
+        socket.addEventListener('open', function (event) {
+            socket.send(JSON.stringify({ 'type': 'subscribe', 'symbol': 'TSLA' }));
+        });
+
+        // Listen for messages
+        socket.addEventListener('message', function (event) {
+            try {
+                const data = JSON.parse(event.data);
+                if (data && data.data && Array.isArray(data.data) && data.data.length > 0) {
+                    const currentTickPrice = data.data[0].p;
+                    latestPrice = currentTickPrice;
+                    currentPriceDiv.textContent = `Current Price: $${latestPrice.toFixed(2)}`;
+
+                    // Set initial price only on the first valid price update
+                    if (initialPrice === null) {
+                        initialPrice = latestPrice;
+                        initialPriceDiv.textContent = `$${initialPrice.toFixed(2)}`;
+                    }
+
+                    updateDifference();
+                    updatePotentialLoss(); // Calculate and display potential loss
+                } else if (data && data.type === 'ping') {
+                    console.log('Received ping from server');
+                } else {
+                    console.log('Received:', data);
+                }
+            } catch (error) {
+                console.error('Error parsing message:', error);
+                console.log('Raw message:', event.data);
+            }
+        });
+
+        // Unsubscribe function (example)
+        function unsubscribe(symbol) {
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({ 'type': 'unsubscribe', 'symbol': symbol }));
+                console.log(`Unsubscribed from ${symbol}`);
+            } else {
+                console.log('WebSocket is not open, cannot unsubscribe.');
+            }
+        }
+
+        // Handle WebSocket closure
+        socket.addEventListener('close', function(event) {
+            console.log('WebSocket connection closed:', event);
+            currentPriceDiv.textContent = 'Connection closed.';
+            initialPriceDiv.textContent = 'Connection closed.';
+            priceDifferenceDiv.textContent = 'Connection closed.';
+            potentialLossDiv.textContent = 'Connection closed.';
+        });
+
+        // Handle WebSocket errors
+        socket.addEventListener('error', function(event) {
+            console.error('WebSocket error:', event);
+            currentPriceDiv.textContent = 'Error fetching data.';
+            initialPriceDiv.textContent = 'Error fetching data.';
+            priceDifferenceDiv.textContent = 'Error fetching data.';
+            potentialLossDiv.textContent = 'Error fetching data.';
+        });
+    </script>
+</body>
+</html>
