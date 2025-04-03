@@ -5,8 +5,41 @@
     <style>
         @import 'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@48,400,1,0';
         @import url('https://fonts.googleapis.com/css2?family=Roboto+Slab&family=Roboto:wght@400;900&display=swap');
+        @media (prefers-color-scheme: dark) {
+    :root {
+        --body-background: #000000;
+        --header-background: #333;
+        --nav-background: #404040;
+        --nav-color: #ccc;
+        --header-title: #b81f24;
+        --header-color: #ccc;
+        --main-background: #333;
+        --main-color: #ccc;
+        --main-link: #9a97f3;
+        --dark-mode-icon: #b81f24;
+        --project-divider: #fff;
+        --links-background: #000000;
+    }
+}
+@media (prefers-color-scheme: light) {
+    :root {
+        --body-background: #e5e5e5;
+        --header-background: #164FD7;
+        --nav-background: #808080;
+        --nav-color: #fff;
+        --header-color: #ffffff;
+        --main-background: #ffffff;
+        --main-headings: #b81f24;
+        --main-color: #000000;
+        --main-link: #302ae6;
+        --dark-mode-icon: #ffffff;
+        --project-divider: #000;
+        --links-background: #b81f24;
+    }
+}
         body {
             font-family: 'Roboto Slab';
+            background-color: var(--body-background);
         }
         h1, h2, h3, h4 {
             font-family: 'Roboto';
@@ -17,10 +50,20 @@
             align-items: center;
             gap: 10px;
             flex-wrap: wrap;
+            background-color: var(--header-background);
+            color: var(--header-color);
+            padding: 0 10px;
+            border-radius: 10px;
         }
         header a {
             font-size: 20px;
             font-family: 'Roboto';
+            color: var(--header-color);
+        }
+        main {
+            max-width: 900px;
+            margin: 5px auto;
+            color: var(--main-color);
         }
         #price-difference {
             font-size: 20px;
@@ -38,6 +81,16 @@
         .negative {
             color: red;
         }
+        .note {
+            text-align: center;
+            border: 2px solid var(--header-background);
+            border-radius: 10px;
+            padding: 15px;
+
+        }
+        .material-symbols-outlined {
+            vertical-align: middle !important;
+        }
     </style>
 </head>
 <body>
@@ -46,7 +99,10 @@
         <a href="tinybell.html">Track with sound alert</a>
         <a href="index.html">Track without sound alert</a>
     </header>
-    <p>Note: I am using a free stock price api, which has a limit to the number of times this page can load. If the data doesn't load for you, check back in a few minutes.</p>
+    <main>
+    <p class="note"><span class="material-symbols-outlined">
+        error
+        </span> Note: I am using a free stock price api, which has a limit to the number of times this page can load. If the data doesn't load for you, check back in a few minutes.</p>
     <p><a href="https://www.ibtimes.co.uk/elon-musk-loses-billion-dollars-every-time-tesla-stock-drops-243-1732298" target="_blank">This</a> article says Elon looses $1 billion every time TSLA drops by $2.43.</p>
     <p>When you loaded this page, TSLA was at <span id="initial-price">Loading...</span>.</p>
     <div id="current-price">Current Price: Loading...</div>
@@ -56,6 +112,7 @@
     <ul>
         <li><a href="https://ryanmontville.com/countdown/">How many days left until January 20, 2029?</a></li>
     </ul>
+</main>
     <script>
         const socket = new WebSocket('wss://ws.finnhub.io?token=cvn7uohr01qqv4h01lmgcvn7uohr01qqv4h01ln0');
         const initialPriceDiv = document.getElementById('initial-price');
